@@ -1,4 +1,4 @@
-package com.imchankyu.chankyu_archive;
+package com.imchankyu;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

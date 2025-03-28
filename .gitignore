@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### CA 파일 ###
+ca.pem
