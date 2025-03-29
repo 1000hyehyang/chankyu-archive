@@ -2,42 +2,30 @@ package com.imchankyu.record.service;
 
 import com.imchankyu.record.entity.PlayerRecord;
 import com.imchankyu.record.repository.PlayerRecordRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
-/**
- * PlayerRecordService - 선수 기록 관련 비즈니스 로직을 처리합니다.
- */
 @Service
+@RequiredArgsConstructor
 public class PlayerRecordService {
 
     private final PlayerRecordRepository playerRecordRepository;
 
-    @Autowired
-    public PlayerRecordService(PlayerRecordRepository playerRecordRepository) {
-        this.playerRecordRepository = playerRecordRepository;
-    }
-
-    public PlayerRecord createRecord(PlayerRecord record) {
-        return playerRecordRepository.save(record);
-    }
-
+    /**
+     * 전체 시즌 기록 조회
+     */
     public List<PlayerRecord> getAllRecords() {
         return playerRecordRepository.findAll();
     }
 
-    public Optional<PlayerRecord> getRecordById(Long id) {
-        return playerRecordRepository.findById(id);
-    }
-
-    public PlayerRecord updateRecord(PlayerRecord record) {
-        return playerRecordRepository.save(record);
-    }
-
-    public void deleteRecord(Long id) {
-        playerRecordRepository.deleteById(id);
+    /**
+     * 단일 시즌 기록 조회 (ID 기준)
+     */
+    public PlayerRecord getRecordById(Long id) {
+        return playerRecordRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 기록이 존재하지 않습니다: " + id));
     }
 }

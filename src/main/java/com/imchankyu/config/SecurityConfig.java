@@ -47,13 +47,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults())  // CORS 활성화
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
-                        .anyRequest().authenticated()
+                        // 인증 관련 API, 회원가입
+                        .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
+
+                        // 기록, 명장면, 뉴스 조회 - 모두 공개
+                        .requestMatchers(HttpMethod.GET, "/api/records/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/highlights/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
+
+                        // 응원글 읽기만 공개, 쓰기/수정/삭제는 로그인 필요
+                        .requestMatchers(HttpMethod.GET, "/api/cheers/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/cheers/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/cheers/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/cheers/**").authenticated()
+
+                        // 팬 노트는 모든 요청 인증 필요
+                        .requestMatchers("/api/notes/**").authenticated()
+
+                        // 기타 요청은 인증 없이 허용 (정적 자원 등)
+                        .anyRequest().permitAll()
                 )
                 .userDetailsService(userDetailsService);
 
@@ -64,9 +80,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 클라이언트 도메인에 맞게 수정
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET","POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // 또는 Vercel 배포 주소
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
