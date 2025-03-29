@@ -31,10 +31,10 @@ public class NewsArticleService {
     @Value("${naver.api.clientSecret}")
     private String clientSecret;
 
-    @Value("${naver.image.clientId}")
+    @Value("${naver.api.clientId}")
     private String imageClientId;
 
-    @Value("${naver.image.clientSecret}")
+    @Value("${naver.api.clientSecret}")
     private String imageClientSecret;
 
     private final WebClient webClient = WebClient.create();
