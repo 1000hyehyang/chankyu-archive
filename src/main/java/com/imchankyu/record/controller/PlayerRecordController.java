@@ -16,21 +16,17 @@ public class PlayerRecordController {
 
     private final PlayerRecordService recordService;
 
-    /**
-     * 전체 시즌 기록 조회
-     */
+    // 전체 시즌 기록 조회
     @GetMapping
     public ResponseEntity<ApiResponse<List<PlayerRecord>>> getAllRecords() {
         List<PlayerRecord> records = recordService.getAllRecords();
-        return ResponseEntity.ok(new ApiResponse<>(true, "Records retrieved successfully", records));
+        return ResponseEntity.ok(new ApiResponse<>(true, "모든 시즌 기록 조회 성공", records));
     }
 
-    /**
-     * 단일 기록 조회 by id
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PlayerRecord>> getRecordById(@PathVariable Long id) {
-        PlayerRecord record = recordService.getRecordById(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Record retrieved successfully", record));
+    // 특정 연도 기록 조회 (예: /api/records/year/2024)
+    @GetMapping("/year/{year}")
+    public ResponseEntity<ApiResponse<PlayerRecord>> getRecordByYear(@PathVariable int year) {
+        PlayerRecord record = recordService.getRecordByYear(year);
+        return ResponseEntity.ok(new ApiResponse<>(true, year + "년 시즌 기록 조회 성공", record));
     }
 }

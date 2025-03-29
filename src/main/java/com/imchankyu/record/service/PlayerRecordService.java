@@ -14,18 +14,14 @@ public class PlayerRecordService {
 
     private final PlayerRecordRepository playerRecordRepository;
 
-    /**
-     * 전체 시즌 기록 조회
-     */
+    // 전체 기록 조회
     public List<PlayerRecord> getAllRecords() {
         return playerRecordRepository.findAll();
     }
 
-    /**
-     * 단일 시즌 기록 조회 (ID 기준)
-     */
-    public PlayerRecord getRecordById(Long id) {
-        return playerRecordRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 기록이 존재하지 않습니다: " + id));
+    // 연도별 기록 조회
+    public PlayerRecord getRecordByYear(int year) {
+        return playerRecordRepository.findByYear(year)
+                .orElseThrow(() -> new EntityNotFoundException(year + "년 시즌 기록이 존재하지 않습니다."));
     }
 }
