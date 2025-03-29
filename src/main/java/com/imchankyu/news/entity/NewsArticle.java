@@ -34,6 +34,9 @@ public class NewsArticle {
     @Column(nullable = false)
     private String pubDate;
 
+    @Column(length = 1024)
+    private String imageUrl;  // 추가된 필드
+
     // 기사 설명 또는 요약
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
