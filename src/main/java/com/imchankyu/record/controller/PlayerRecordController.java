@@ -1,7 +1,7 @@
 package com.imchankyu.record.controller;
 
 import com.imchankyu.common.util.ApiResponse;
-import com.imchankyu.record.entity.PlayerRecord;
+import com.imchankyu.record.dto.PlayerRecordDto;
 import com.imchankyu.record.service.PlayerRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,19 +14,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlayerRecordController {
 
-    private final PlayerRecordService recordService;
+    private final PlayerRecordService playerRecordService;
 
-    // 전체 시즌 기록 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PlayerRecord>>> getAllRecords() {
-        List<PlayerRecord> records = recordService.getAllRecords();
+    public ResponseEntity<ApiResponse<List<PlayerRecordDto>>> getAllRecords() {
+        List<PlayerRecordDto> records = playerRecordService.getAllRecords();
         return ResponseEntity.ok(new ApiResponse<>(true, "모든 시즌 기록 조회 성공", records));
     }
 
-    // 특정 연도 기록 조회 (예: /api/records/year/2024)
-    @GetMapping("/year/{year}")
-    public ResponseEntity<ApiResponse<PlayerRecord>> getRecordByYear(@PathVariable int year) {
-        PlayerRecord record = recordService.getRecordByYear(year);
-        return ResponseEntity.ok(new ApiResponse<>(true, year + "년 시즌 기록 조회 성공", record));
+    @GetMapping("/{year}")
+    public ResponseEntity<ApiResponse<PlayerRecordDto>> getRecordByYear(@PathVariable int year) {
+        PlayerRecordDto record = playerRecordService.getRecordByYear(year);
+        return ResponseEntity.ok(new ApiResponse<>(true, year + " 시즌 기록 조회 성공", record));
     }
 }

@@ -1,6 +1,7 @@
 package com.imchankyu.news.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.imchankyu.news.dto.NewsArticleDto;
 import com.imchankyu.news.entity.NewsArticle;
 import com.imchankyu.news.repository.NewsArticleRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,11 +67,9 @@ public class NewsArticleService {
             String pubDate = item.get("pubDate").asText();
             String source = item.has("originallink") ? item.get("originallink").asText() : link;
 
-            // 중복 방지
             Optional<NewsArticle> existing = newsArticleRepository.findByLink(link);
             if (existing.isPresent()) continue;
 
-            // 이미지 검색
             String imageUrl = fetchImageUrl(title);
 
             NewsArticle article = NewsArticle.builder()
@@ -82,7 +83,7 @@ public class NewsArticleService {
                     .build();
 
             newsArticleRepository.save(article);
-            log.info("저장된 뉴스: {}", title);
+            log.info("뉴스 기사 저장됨: {}", title);
         }
     }
 
@@ -110,8 +111,21 @@ public class NewsArticleService {
         return null;
     }
 
-    public java.util.List<NewsArticle> getAllArticles() {
-        return newsArticleRepository.findAll();
+    public List<NewsArticleDto> getAllArticles() {
+        return newsArticleRepository.findAll().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    private NewsArticleDto toDto(NewsArticle article) {
+        return NewsArticleDto.builder()
+                .title(article.getTitle())
+                .link(article.getLink())
+                .pubDate(article.getPubDate())
+                .description(article.getDescription())
+                .source(article.getSource())
+                .imageUrl(article.getImageUrl())
+                .build();
     }
 
     public void saveArticle(NewsArticle article) {
