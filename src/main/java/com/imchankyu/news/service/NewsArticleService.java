@@ -129,6 +129,11 @@ public class NewsArticleService {
     }
 
     public void saveArticle(NewsArticle article) {
-        newsArticleRepository.save(article);
+        if (newsArticleRepository.findByLink(article.getLink()).isEmpty()) {
+            newsArticleRepository.save(article);
+            log.info("중복 아님 - 저장 완료: {}", article.getTitle());
+        } else {
+            log.info("중복된 뉴스 기사입니다: {}", article.getLink());
+        }
     }
 }
