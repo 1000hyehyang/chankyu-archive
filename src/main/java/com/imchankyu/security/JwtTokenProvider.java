@@ -1,11 +1,15 @@
 package com.imchankyu.security;
 
+import com.imchankyu.user.entity.User;
+import com.imchankyu.user.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.security.Principal;
 import java.util.Date;
 
 /**
@@ -15,14 +19,20 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final Key secretKey;
+    private final UserRepository userRepository;
 
     // Access Token 유효 기간: 1시간
     private static final long EXPIRATION_MS = 1000 * 60 * 60;
+
     // Refresh Token 유효 기간: 7일
     private static final long REFRESH_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 7;
 
-    public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
+    public JwtTokenProvider(
+            @Value("${jwt.secret}") String secret,
+            UserRepository userRepository
+    ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
+        this.userRepository = userRepository;
     }
 
     /**
@@ -61,6 +71,16 @@ public class JwtTokenProvider {
      */
     public String getEmailFromToken(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    /**
+     * Principal 기반으로 사용자 ID 반환
+     */
+    public Long getUserIdFromPrincipal(Principal principal) {
+        String email = principal.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다."))
+                .getId();
     }
 
     /**

@@ -1,47 +1,84 @@
 package com.imchankyu.note.service;
 
+import com.imchankyu.note.dto.FanNoteDto;
+import com.imchankyu.note.dto.FanNoteRequestDto;
 import com.imchankyu.note.entity.FanNote;
 import com.imchankyu.note.repository.FanNoteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.imchankyu.user.entity.User;
+import com.imchankyu.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
-/**
- * FanNoteService - 감상 메모 관련 비즈니스 로직을 처리합니다.
- */
 @Service
+@RequiredArgsConstructor
 public class FanNoteService {
 
     private final FanNoteRepository fanNoteRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    public FanNoteService(FanNoteRepository fanNoteRepository) {
-        this.fanNoteRepository = fanNoteRepository;
+    public FanNoteDto createNote(Long userId, FanNoteRequestDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+
+        FanNote note = FanNote.builder()
+                .title(dto.getTitle())
+                .content(dto.getContent())
+                .date(dto.getDate())
+                .user(user)
+                .build();
+
+        return convertToDto(fanNoteRepository.save(note));
     }
 
-    public FanNote createFanNote(FanNote note) {
-        return fanNoteRepository.save(note);
+    public List<FanNoteDto> getUserNotes(Long userId) {
+        return fanNoteRepository.findByUserId(userId).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
-    public List<FanNote> getAllFanNotes() {
-        return fanNoteRepository.findAll();
+    public FanNoteDto getNoteById(Long id, Long userId) {
+        FanNote note = fanNoteRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("메모를 찾을 수 없습니다."));
+        if (!note.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 메모만 조회할 수 있습니다.");
+        }
+        return convertToDto(note);
     }
 
-    public Optional<FanNote> getFanNoteById(Long id) {
-        return fanNoteRepository.findById(id);
+    public FanNoteDto updateNote(Long id, Long userId, FanNoteRequestDto dto) {
+        FanNote note = fanNoteRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("메모를 찾을 수 없습니다."));
+        if (!note.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 메모만 수정할 수 있습니다.");
+        }
+
+        note.setTitle(dto.getTitle());
+        note.setContent(dto.getContent());
+        note.setDate(dto.getDate());
+
+        return convertToDto(fanNoteRepository.save(note));
     }
 
-    public FanNote updateFanNote(FanNote note) {
-        return fanNoteRepository.save(note);
+    public void deleteNote(Long id, Long userId) {
+        FanNote note = fanNoteRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("메모를 찾을 수 없습니다."));
+        if (!note.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 메모만 삭제할 수 있습니다.");
+        }
+        fanNoteRepository.delete(note);
     }
 
-    public void deleteFanNote(Long id) {
-        fanNoteRepository.deleteById(id);
-    }
-
-    public List<FanNote> getFanNotesByUserId(Long userId) {
-        return fanNoteRepository.findByUserId(userId);
+    private FanNoteDto convertToDto(FanNote note) {
+        return FanNoteDto.builder()
+                .id(note.getId())
+                .title(note.getTitle())
+                .content(note.getContent())
+                .date(note.getDate())
+                .userId(note.getUser().getId())
+                .build();
     }
 }
