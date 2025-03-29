@@ -42,6 +42,9 @@ public class NewsArticleService {
 
     private final WebClient webClient = WebClient.create();
 
+    /**
+     * 뉴스 기사 저장 + 중복 방지 + 이미지 썸네일 추가 + 임찬규 필터링
+     */
     @Scheduled(fixedRate = 1000 * 60 * 60)
     public void fetchAndSaveNewsArticles() {
         String query = URLEncoder.encode("임찬규", StandardCharsets.UTF_8);
@@ -62,8 +65,14 @@ public class NewsArticleService {
 
         for (JsonNode item : response.get("items")) {
             String title = item.get("title").asText().replaceAll("<.*?>", "");
-            String link = item.get("link").asText();
             String description = item.get("description").asText().replaceAll("<.*?>", "");
+
+            // 필터링: 제목/본문에 "임찬규" 포함 안되면 저장하지 않음
+            if (!title.contains("임찬규") && !description.contains("임찬규")) {
+                continue;
+            }
+
+            String link = item.get("link").asText();
             String pubDate = item.get("pubDate").asText();
             String source = item.has("originallink") ? item.get("originallink").asText() : link;
 
@@ -87,9 +96,13 @@ public class NewsArticleService {
         }
     }
 
+    /**
+     * 네이버 이미지 검색 API를 통해 썸네일 추출
+     */
     private String fetchImageUrl(String query) {
         try {
-            String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            // 고정 키워드 "임찬규"로 이미지 검색
+            String encoded = URLEncoder.encode("임찬규", StandardCharsets.UTF_8);
             String imageApiUrl = "https://openapi.naver.com/v1/search/image?query=" + encoded + "&display=1";
 
             JsonNode imageResponse = webClient.get()
@@ -102,7 +115,7 @@ public class NewsArticleService {
 
             JsonNode items = imageResponse.get("items");
             if (items != null && items.size() > 0) {
-                return items.get(0).get("link").asText();
+                return items.get(0).get("link").asText(); // 썸네일 이미지 URL
             }
 
         } catch (Exception e) {
@@ -111,29 +124,23 @@ public class NewsArticleService {
         return null;
     }
 
+    /**
+     * DTO 형태로 반환
+     */
     public List<NewsArticleDto> getAllArticles() {
         return newsArticleRepository.findAll().stream()
-                .map(this::toDto)
+                .map(article -> NewsArticleDto.builder()
+                        .title(article.getTitle())
+                        .link(article.getLink())
+                        .pubDate(article.getPubDate())
+                        .description(article.getDescription())
+                        .source(article.getSource())
+                        .imageUrl(article.getImageUrl())
+                        .build())
                 .collect(Collectors.toList());
     }
 
-    private NewsArticleDto toDto(NewsArticle article) {
-        return NewsArticleDto.builder()
-                .title(article.getTitle())
-                .link(article.getLink())
-                .pubDate(article.getPubDate())
-                .description(article.getDescription())
-                .source(article.getSource())
-                .imageUrl(article.getImageUrl())
-                .build();
-    }
-
     public void saveArticle(NewsArticle article) {
-        if (newsArticleRepository.findByLink(article.getLink()).isEmpty()) {
-            newsArticleRepository.save(article);
-            log.info("중복 아님 - 저장 완료: {}", article.getTitle());
-        } else {
-            log.info("중복된 뉴스 기사입니다: {}", article.getLink());
-        }
+        newsArticleRepository.save(article);
     }
 }
