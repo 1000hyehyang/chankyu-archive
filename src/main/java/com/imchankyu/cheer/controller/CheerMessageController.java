@@ -1,57 +1,54 @@
 package com.imchankyu.cheer.controller;
 
-import com.imchankyu.common.util.ApiResponse;
+import com.imchankyu.cheer.dto.CheerMessageRequest;
+import com.imchankyu.cheer.dto.CheerMessageUpdateRequest;
 import com.imchankyu.cheer.entity.CheerMessage;
 import com.imchankyu.cheer.service.CheerMessageService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.imchankyu.common.util.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * CheerMessageController - 응원 메시지 CRUD API 엔드포인트를 제공합니다.
- */
 @RestController
 @RequestMapping("/api/cheers")
+@RequiredArgsConstructor
 public class CheerMessageController {
 
     private final CheerMessageService cheerMessageService;
 
-    @Autowired
-    public CheerMessageController(CheerMessageService cheerMessageService) {
-        this.cheerMessageService = cheerMessageService;
-    }
-
     @PostMapping
-    public ResponseEntity<ApiResponse<CheerMessage>> createCheerMessage(@RequestBody CheerMessage message) {
-        CheerMessage savedMessage = cheerMessageService.createCheerMessage(message);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Cheer message created successfully", savedMessage));
+    public ResponseEntity<ApiResponse<CheerMessage>> create(@RequestBody CheerMessageRequest request) {
+        CheerMessage created = cheerMessageService.create(request);
+        return ResponseEntity.ok(new ApiResponse<>(true, "응원 메시지 작성 완료", created));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CheerMessage>>> getAllCheerMessages() {
-        List<CheerMessage> messages = cheerMessageService.getAllCheerMessages();
-        return ResponseEntity.ok(new ApiResponse<>(true, "Cheer messages retrieved successfully", messages));
+    public ResponseEntity<ApiResponse<List<CheerMessage>>> findAll() {
+        return ResponseEntity.ok(new ApiResponse<>(true, "모든 응원 메시지 조회 완료", cheerMessageService.findAll()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CheerMessage>> getCheerMessageById(@PathVariable Long id) {
-        return cheerMessageService.getCheerMessageById(id)
-                .map(message -> ResponseEntity.ok(new ApiResponse<>(true, "Cheer message retrieved successfully", message)))
-                .orElse(ResponseEntity.badRequest().body(new ApiResponse<>(false, "Cheer message not found", null)));
+    public ResponseEntity<ApiResponse<CheerMessage>> findById(@PathVariable Long id) {
+        return cheerMessageService.findById(id)
+                .map(msg -> ResponseEntity.ok(new ApiResponse<>(true, "응원 메시지 조회 완료", msg)))
+                .orElse(ResponseEntity.badRequest().body(new ApiResponse<>(false, "해당 메시지를 찾을 수 없습니다.", null)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CheerMessage>> updateCheerMessage(@PathVariable Long id, @RequestBody CheerMessage message) {
-        message.setId(id);
-        CheerMessage updatedMessage = cheerMessageService.updateCheerMessage(message);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Cheer message updated successfully", updatedMessage));
+    public ResponseEntity<ApiResponse<CheerMessage>> update(
+            @PathVariable Long id,
+            @RequestBody CheerMessageUpdateRequest request) {
+        CheerMessage updated = cheerMessageService.update(id, request);
+        return ResponseEntity.ok(new ApiResponse<>(true, "응원 메시지 수정 완료", updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteCheerMessage(@PathVariable Long id) {
-        cheerMessageService.deleteCheerMessage(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Cheer message deleted successfully", null));
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id,
+            @RequestParam("password") String password) {
+        cheerMessageService.delete(id, password);
+        return ResponseEntity.ok(new ApiResponse<>(true, "응원 메시지 삭제 완료", null));
     }
 }
