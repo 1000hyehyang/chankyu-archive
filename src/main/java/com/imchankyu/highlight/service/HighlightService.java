@@ -2,42 +2,21 @@ package com.imchankyu.highlight.service;
 
 import com.imchankyu.highlight.entity.Highlight;
 import com.imchankyu.highlight.repository.HighlightRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
-/**
- * HighlightService - 명장면 관련 비즈니스 로직을 처리합니다.
- */
 @Service
+@RequiredArgsConstructor
 public class HighlightService {
 
     private final HighlightRepository highlightRepository;
 
-    @Autowired
-    public HighlightService(HighlightRepository highlightRepository) {
-        this.highlightRepository = highlightRepository;
-    }
-
-    public Highlight createHighlight(Highlight highlight) {
-        return highlightRepository.save(highlight);
-    }
-
+    // 명장면 전체 조회
     public List<Highlight> getAllHighlights() {
-        return highlightRepository.findAll();
-    }
-
-    public Optional<Highlight> getHighlightById(Long id) {
-        return highlightRepository.findById(id);
-    }
-
-    public Highlight updateHighlight(Highlight highlight) {
-        return highlightRepository.save(highlight);
-    }
-
-    public void deleteHighlight(Long id) {
-        highlightRepository.deleteById(id);
+        return highlightRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 }
+
