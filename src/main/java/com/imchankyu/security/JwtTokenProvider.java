@@ -1,0 +1,85 @@
+package com.imchankyu.security;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.security.Key;
+import java.util.Date;
+
+/**
+ * JwtTokenProvider - JWT 생성 및 검증, 정보 추출 역할 수행
+ */
+@Component
+public class JwtTokenProvider {
+
+    private final Key secretKey;
+
+    // Access Token 유효 기간: 1시간
+    private static final long EXPIRATION_MS = 1000 * 60 * 60;
+    // Refresh Token 유효 기간: 7일
+    private static final long REFRESH_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 7;
+
+    public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    /**
+     * 이메일과 역할 정보를 포함하는 Access Token 생성 메서드
+     */
+    public String createToken(String email, String role) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + EXPIRATION_MS);
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("role", role)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /**
+     * Refresh Token 생성 메서드 (역할 정보 없이 이메일만 담음)
+     */
+    public String createRefreshToken(String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + REFRESH_EXPIRATION_MS);
+
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /**
+     * JWT에서 사용자 이메일 추출
+     */
+    public String getEmailFromToken(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    /**
+     * 토큰 유효성 검증
+     */
+    public boolean validateToken(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+}

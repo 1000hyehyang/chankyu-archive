@@ -1,77 +1,53 @@
 package com.imchankyu.user.service;
 
+import com.imchankyu.user.dto.RegisterRequest;
+import com.imchankyu.user.dto.UserDto;
 import com.imchankyu.user.entity.User;
 import com.imchankyu.user.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * UserService - 사용자 관련 비즈니스 로직을 처리합니다.
+ * 사용자 등록 및 조회 관련 비즈니스 로직 처리
  */
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-
-    // 생성자 주입
-    @Autowired
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final PasswordEncoder passwordEncoder;
 
     /**
-     * 새로운 사용자를 등록합니다.
-     * @param user 등록할 사용자 정보
-     * @return 저장된 사용자 엔티티
+     * 사용자 회원가입 처리
      */
-    public User registerUser(User user) {
-        // 비밀번호 암호화, 이메일 중복 체크 등의 로직 추가 가능
+    @Transactional
+    public User registerUser(RegisterRequest request) {
+        // 중복 이메일 체크
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+        }
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword())) // 비밀번호 암호화
+                .nickname(request.getNickname())
+                .role("USER")
+                .build();
+
         return userRepository.save(user);
     }
 
     /**
-     * 모든 사용자를 조회합니다.
-     * @return 사용자 리스트
+     * 전체 사용자 조회 (테스트용 or 관리용)
      */
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    /**
-     * 이메일을 통해 사용자를 조회합니다.
-     * @param email 사용자 이메일
-     * @return Optional User
-     */
-    public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-
-    /**
-     * 사용자 ID로 사용자를 조회합니다.
-     * @param id 사용자 ID
-     * @return Optional User
-     */
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
-    }
-
-    /**
-     * 사용자 정보를 업데이트합니다.
-     * @param user 업데이트할 사용자 정보
-     * @return 업데이트된 사용자 엔티티
-     */
-    public User updateUser(User user) {
-        return userRepository.save(user);
-    }
-
-    /**
-     * 사용자 삭제
-     * @param id 삭제할 사용자 ID
-     */
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    public List<UserDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> new UserDto(user.getId(), user.getEmail(), user.getNickname()))
+                .collect(Collectors.toList());
     }
 }
