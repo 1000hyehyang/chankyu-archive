@@ -64,11 +64,11 @@ public class NewsArticleService {
             String pubDate = item.get("pubDate").asText();
             String source = item.has("originallink") ? item.get("originallink").asText() : link;
 
-            // 🔁 중복 방지
+            // 중복 방지
             Optional<NewsArticle> existing = newsArticleRepository.findByLink(link);
             if (existing.isPresent()) continue;
 
-            // 📸 이미지 검색
+            // 이미지 검색
             String imageUrl = fetchImageUrl(title);
 
             NewsArticle article = NewsArticle.builder()
@@ -82,7 +82,7 @@ public class NewsArticleService {
                     .build();
 
             newsArticleRepository.save(article);
-            log.info("✅ 저장된 뉴스: {}", title);
+            log.info("저장된 뉴스: {}", title);
         }
     }
 
@@ -105,7 +105,7 @@ public class NewsArticleService {
             }
 
         } catch (Exception e) {
-            log.warn("❌ 이미지 검색 실패: {}", e.getMessage());
+            log.warn("이미지 검색 실패: {}", e.getMessage());
         }
         return null;
     }
