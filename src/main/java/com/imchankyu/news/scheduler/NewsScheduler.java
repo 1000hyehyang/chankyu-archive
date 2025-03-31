@@ -37,9 +37,9 @@ public class NewsScheduler {
     }
 
     /**
-     * 1시간마다 네이버 뉴스 API를 호출하여 "임찬규" 관련 기사를 sim 정렬로 수집합니다.
+     * 매일 새벽 3시마다 네이버 뉴스 API를 호출하여 "임찬규" 관련 기사를 sim 정렬로 수집합니다.
      */
-    @Scheduled(fixedRate = 1000 * 60 * 60)
+    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
     public void fetchNews() {
         try {
             String query = "임찬규";
