@@ -8,8 +8,8 @@ import lombok.Data;
 public class NewsArticleDto {
     private String title;
     private String link;
-    private String pubDate;
     private String description;
-    private String source;
+    private String pubDate;
     private String imageUrl;
+    private String source;
 }

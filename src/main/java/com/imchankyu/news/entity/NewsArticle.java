@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "news_articles", uniqueConstraints = {@UniqueConstraint(columnNames = {"link"})})
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -35,6 +36,14 @@ public class NewsArticle {
     @Column(nullable = false, length = 512)
     private String source;
 
-    @Column(nullable = false)
+    @Column(name = "fetched_at", nullable = false)
     private LocalDateTime fetchedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (fetchedAt == null) {
+            fetchedAt = LocalDateTime.now();
+        }
+    }
+
 }

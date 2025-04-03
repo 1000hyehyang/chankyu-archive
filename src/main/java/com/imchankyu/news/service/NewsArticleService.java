@@ -1,94 +1,62 @@
 package com.imchankyu.news.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.imchankyu.news.dto.NewsArticleDto;
 import com.imchankyu.news.entity.NewsArticle;
 import com.imchankyu.news.repository.NewsArticleRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class NewsArticleService {
-
     private final NewsArticleRepository newsArticleRepository;
+    private final NaverNewsClient naverNewsClient;
 
-    @Value("${naver.api.url}")
-    private String newsApiUrl;
+    public void saveDailyNews(String keyword) {
+        List<NewsArticleDto> newsList = naverNewsClient.fetchNews(keyword);
 
-    @Value("${naver.api.clientId}")
-    private String clientId;
+        if (newsList.isEmpty()) return;
 
-    @Value("${naver.api.clientSecret}")
-    private String clientSecret;
+        // 수집한 뉴스 링크 목록 추출
+        List<String> allLinks = newsList.stream()
+                .map(NewsArticleDto::getLink)
+                .collect(Collectors.toList());
 
-    @Value("${naver.api.clientId}")
-    private String imageClientId;
+        // DB에 이미 있는 링크들 한 번에 조회
+        List<String> existingLinks = newsArticleRepository.findLinksByLinkIn(allLinks);
 
-    @Value("${naver.api.clientSecret}")
-    private String imageClientSecret;
-
-    private final WebClient webClient = WebClient.create();
-
-    public String fetchImageUrl(String query) {
-        try {
-            String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String imageApiUrl = "https://openapi.naver.com/v1/search/image?query=" + encoded + "&display=1";
-
-            JsonNode imageResponse = webClient.get()
-                    .uri(imageApiUrl)
-                    .header("X-Naver-Client-Id", imageClientId)
-                    .header("X-Naver-Client-Secret", imageClientSecret)
-                    .retrieve()
-                    .bodyToMono(JsonNode.class)
-                    .block();
-
-            JsonNode items = imageResponse.get("items");
-            if (items != null && items.size() > 0) {
-                return items.get(0).get("link").asText(); // 썸네일 이미지 URL
-            }
-
-        } catch (Exception e) {
-            log.warn("이미지 검색 실패: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    public void saveArticle(NewsArticle article) {
-        // 중복 방지
-        Optional<NewsArticle> existing = newsArticleRepository.findByLink(article.getLink());
-        if (existing.isPresent()) return;
-
-        // 이미지 썸네일 가져오기
-        String imageUrl = fetchImageUrl(article.getTitle());
-        article.setImageUrl(imageUrl);
-
-        article.setFetchedAt(LocalDateTime.now());
-        newsArticleRepository.save(article);
-        log.info("뉴스 기사 저장 완료: {}", article.getTitle());
-    }
-
-    public List<NewsArticleDto> getAllArticles() {
-        return newsArticleRepository.findAll().stream()
-                .map(article -> NewsArticleDto.builder()
-                        .title(article.getTitle())
-                        .link(article.getLink())
-                        .pubDate(article.getPubDate())
-                        .description(article.getDescription())
-                        .source(article.getSource())
-                        .imageUrl(article.getImageUrl())
+        // 중복되지 않은 기사만 저장
+        List<NewsArticle> newArticles = newsList.stream()
+                .filter(dto -> !existingLinks.contains(dto.getLink()))
+                .map(dto -> NewsArticle.builder()
+                        .title(dto.getTitle())
+                        .link(dto.getLink())
+                        .description(dto.getDescription())
+                        .pubDate(dto.getPubDate())
+                        .imageUrl(dto.getImageUrl())
+                        .source(dto.getSource())
+                        .fetchedAt(LocalDateTime.now())
                         .build())
                 .collect(Collectors.toList());
+
+        newsArticleRepository.saveAll(newArticles); // ✅ saveAll로 일괄 저장
+    }
+
+
+    public List<NewsArticleDto> getAllNews() {
+        return newsArticleRepository.findAll().stream().map(article ->
+                NewsArticleDto.builder()
+                        .title(article.getTitle())
+                        .link(article.getLink())
+                        .description(article.getDescription())
+                        .pubDate(article.getPubDate())
+                        .imageUrl(article.getImageUrl())
+                        .source(article.getSource())
+                        .build()
+        ).toList();
     }
 }
