@@ -10,8 +10,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -36,22 +36,19 @@ public class NewsScheduler {
         this.objectMapper = new ObjectMapper();
     }
 
-    /**
-     * 매일 새벽 3시마다 네이버 뉴스 API를 호출하여 "임찬규" 관련 기사를 sim 정렬로 수집합니다.
-     */
     @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
     public void fetchNews() {
         try {
             String query = "임찬규";
-            String[] sortTypes = {"sim", "date"}; // 관련도, 최신순 둘 다
+            String[] sortTypes = {"sim", "date"};
 
-            Set<String> seenLinks = new HashSet<>(); // 중복 제거용
+            Set<String> seenLinks = new HashSet<>();
             List<NewsArticle> uniqueArticles = new ArrayList<>();
 
             for (String sort : sortTypes) {
                 String response = webClient.get()
                         .uri(uriBuilder -> uriBuilder
-                                .queryParam("query", query) // URLEncoder 인코딩 생략
+                                .queryParam("query", query)
                                 .queryParam("sort", sort)
                                 .queryParam("display", 10)
                                 .build())
@@ -66,16 +63,19 @@ public class NewsScheduler {
                     for (JsonNode item : items) {
                         String link = item.path("link").asText();
                         if (seenLinks.contains(link)) continue;
-
                         seenLinks.add(link);
 
+                        String title = item.path("title").asText().replaceAll("<.*?>", "");
+                        String description = item.path("description").asText().replaceAll("<.*?>", "");
+                        String pubDate = item.path("pubDate").asText();
+                        String source = item.has("originallink") ? item.get("originallink").asText() : link;
+
                         NewsArticle article = NewsArticle.builder()
-                                .title(item.path("title").asText().replaceAll("<.*?>", ""))
+                                .title(title)
                                 .link(link)
-                                .pubDate(item.path("pubDate").asText())
-                                .description(item.path("description").asText().replaceAll("<.*?>", ""))
-                                .source(item.path("originallink").asText())
-                                .fetchedAt(LocalDateTime.now())
+                                .description(description)
+                                .pubDate(pubDate)
+                                .source(source)
                                 .build();
 
                         uniqueArticles.add(article);
@@ -84,16 +84,18 @@ public class NewsScheduler {
             }
 
             // 최신순 정렬
-            uniqueArticles.sort((a, b) -> b.getPubDate().compareTo(a.getPubDate()));
+            List<NewsArticle> sortedArticles = uniqueArticles.stream()
+                    .sorted((a, b) -> b.getPubDate().compareTo(a.getPubDate()))
+                    .collect(Collectors.toList());
 
-            for (NewsArticle article : uniqueArticles) {
-                newsArticleService.saveArticle(article);
+            for (NewsArticle article : sortedArticles) {
+                newsArticleService.saveArticle(article); // 썸네일 포함 저장
             }
 
-            log.info("임찬규 관련 뉴스 기사 {}건 저장 완료", uniqueArticles.size());
+            log.info("✅ 뉴스 기사 {}건 저장 완료", sortedArticles.size());
 
         } catch (Exception e) {
-            log.error("임찬규 뉴스 수집 중 오류 발생", e);
+            log.error("❌ 뉴스 수집 중 오류 발생", e);
         }
     }
 }
