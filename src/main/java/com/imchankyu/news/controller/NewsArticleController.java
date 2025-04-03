@@ -1,5 +1,6 @@
 package com.imchankyu.news.controller;
 
+import com.imchankyu.common.util.ApiResponse;
 import com.imchankyu.news.dto.NewsArticleDto;
 import com.imchankyu.news.service.NewsArticleService;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +18,8 @@ public class NewsArticleController {
     private final NewsArticleService newsArticleService;
 
     @GetMapping
-    public ResponseEntity<List<NewsArticleDto>> getAllNews() {
+    public ResponseEntity<ApiResponse<List<NewsArticleDto>>> getAllNews() {
         List<NewsArticleDto> articles = newsArticleService.getAllNews();
-        return ResponseEntity.ok(articles);
+        return ResponseEntity.ok(ApiResponse.success(articles));
     }
 }
