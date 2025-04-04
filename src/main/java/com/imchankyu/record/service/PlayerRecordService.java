@@ -31,12 +31,13 @@ public class PlayerRecordService {
     private PlayerRecordDto convertToDto(PlayerRecord record) {
         return PlayerRecordDto.builder()
                 .year(record.getYear())
+                .gameCount(record.getGameCount())
+                .innings(record.getInnings())
+                .era(record.getEra())
                 .wins(record.getWins())
                 .losses(record.getLosses())
-                .era(record.getEra())
-                .innings(record.getInnings())
+                .save(record.getSave())
                 .strikeouts(record.getStrikeouts())
-                .gameCount(record.getGameCount())
                 .build();
     }
 }
