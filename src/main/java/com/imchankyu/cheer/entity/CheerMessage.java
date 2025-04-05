@@ -2,7 +2,6 @@ package com.imchankyu.cheer.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -31,13 +30,5 @@ public class CheerMessage {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-    }
-
-    public boolean matchPassword(String rawPassword, PasswordEncoder encoder) {
-        return encoder.matches(rawPassword, this.passwordHash);
-    }
-
-    public void updateContent(String newContent) {
-        this.content = newContent;
     }
 }
