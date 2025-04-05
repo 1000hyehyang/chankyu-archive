@@ -17,7 +17,6 @@ public class CheerMessageService {
     public CheerMessage create(CheerMessageRequest request) {
         CheerMessage message = CheerMessage.builder()
                 .nickname(request.getNickname())
-                .passwordHash("none") // 패스워드는 무시
                 .content(request.getContent())
                 .build();
         return cheerMessageRepository.save(message);

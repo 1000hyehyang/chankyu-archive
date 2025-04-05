@@ -20,8 +20,6 @@ public class CheerMessage {
 
     private String nickname;
 
-    private String passwordHash;
-
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
