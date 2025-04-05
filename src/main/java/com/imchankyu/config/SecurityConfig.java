@@ -60,11 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/highlights/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
 
-                        // 응원글 읽기만 공개, 쓰기/수정/삭제는 로그인 필요
+                        // 응원글 읽기 + 작성 모두 공개
                         .requestMatchers(HttpMethod.GET, "/api/cheers/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/cheers/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/cheers/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/cheers/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/cheers/**").permitAll()
 
                         // 팬 노트는 모든 요청 인증 필요
                         .requestMatchers("/api/notes/**").authenticated()
