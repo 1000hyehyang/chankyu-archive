@@ -7,6 +7,7 @@ import lombok.*;
  * User 엔티티 - 회원 정보를 저장합니다.
  */
 @Entity
+@Table(name = "users")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
