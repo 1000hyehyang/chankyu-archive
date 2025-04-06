@@ -1,5 +1,7 @@
 package com.imchankyu.user.service;
 
+import com.imchankyu.auth.entity.RefreshToken;
+import com.imchankyu.auth.repository.RefreshTokenRepository;
 import com.imchankyu.security.JwtTokenProvider;
 import com.imchankyu.user.dto.LoginRequest;
 import com.imchankyu.user.dto.LoginResponse;
@@ -21,6 +23,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     /**
      * 로그인 처리
@@ -42,5 +45,33 @@ public class AuthService {
         String token = jwtTokenProvider.createToken(user.getEmail());
 
         return new LoginResponse(token);
+    }
+
+    /**
+     * Refresh Token 저장 또는 업데이트
+     */
+    public void saveRefreshToken(String email, String token) {
+        refreshTokenRepository.findByEmail(email).ifPresentOrElse(
+                existing -> existing.updateToken(token),
+                () -> refreshTokenRepository.save(
+                        RefreshToken.builder().email(email).token(token).build()
+                )
+        );
+    }
+
+    /**
+     * Refresh Token 삭제 (로그아웃 처리)
+     */
+    public void deleteRefreshToken(String email) {
+        refreshTokenRepository.deleteByEmail(email);
+    }
+
+    /**
+     * Refresh Token 유효성 확인
+     */
+    public boolean isValidRefreshToken(String email, String token) {
+        return refreshTokenRepository.findByEmail(email)
+                .map(stored -> stored.getToken().equals(token))
+                .orElse(false);
     }
 }

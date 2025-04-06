@@ -37,6 +37,7 @@ public class AuthController {
 
         // Refresh Token 별도 발급
         String refreshToken = jwtTokenProvider.createRefreshToken(loginRequest.getEmail());
+        authService.saveRefreshToken(loginRequest.getEmail(), refreshToken);
 
         // 응답 생성
         ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(
@@ -57,22 +58,39 @@ public class AuthController {
 
         // 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new BadCredentialsException("Invalid refresh token");
+            throw new BadCredentialsException("유효하지 않은 리프레시 토큰입니다.");
         }
 
         // 이메일 추출 → 실제론 DB 조회 후 권한 확인 추천
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
 
+        if (!authService.isValidRefreshToken(email, refreshToken)) {
+            throw new BadCredentialsException("리프레시 토큰이 일치하지 않습니다.");
+        }
+
         // 새 Access Token 발급
         String newAccessToken = jwtTokenProvider.createToken(email);
 
         // 응답 반환
-        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(
-                true,
-                "Token refreshed successfully",
-                new LoginResponse(newAccessToken, refreshToken)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "Access Token 재발급 성공",
+                new LoginResponse(newAccessToken, refreshToken)));
+    }
 
-        return ResponseEntity.ok(apiResponse);
+    /**
+     * [POST] /api/auth/logout
+     * 로그아웃 API - Refresh Token 삭제
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(@RequestBody Map<String, String> tokenRequest) {
+        String refreshToken = tokenRequest.get("refreshToken");
+
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new BadCredentialsException("유효하지 않은 리프레시 토큰입니다.");
+        }
+
+        String email = jwtTokenProvider.getEmailFromToken(refreshToken);
+        authService.deleteRefreshToken(email);
+
+        return ResponseEntity.ok(new ApiResponse<>(true, "로그아웃 처리 완료", null));
     }
 }
