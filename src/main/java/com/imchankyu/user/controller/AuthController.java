@@ -1,9 +1,11 @@
 package com.imchankyu.user.controller;
 
 import com.imchankyu.common.util.ApiResponse;
+import com.imchankyu.user.dto.LoginRequest;
 import com.imchankyu.user.dto.LoginResponse;
 import com.imchankyu.user.service.AuthService;
 import com.imchankyu.security.JwtTokenProvider;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -12,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * 로그인 관련 API를 제공하는 컨트롤러
+ * 로그인/토큰 관련 API 컨트롤러
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -23,38 +25,54 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * 로그인 API - 이메일과 비밀번호를 받아 JWT 토큰 반환
+     * [POST] /api/auth/login
+     * 로그인 API - 이메일/비밀번호 입력 시 Access + Refresh Token 발급
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody Map<String, String> loginRequest) {
-        // Map에서 이메일, 비밀번호 추출
-        String email = loginRequest.get("email");
-        String password = loginRequest.get("password");
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @RequestBody @Valid LoginRequest loginRequest
+    ) {
+        // 로그인 처리
+        LoginResponse response = authService.login(loginRequest);
 
-        // 로그인 시 Access Token 발급 (AuthService는 LoginResponse에 Access Token만 담아서 반환)
-        LoginResponse response = authService.login(new com.imchankyu.user.dto.LoginRequest(email, password));
-        // Refresh Token 발급
-        String refreshToken = jwtTokenProvider.createRefreshToken(email);
-        // Access Token과 Refresh Token을 함께 반환하는 LoginResponse 생성
-        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(true, "Login successful",
-                new LoginResponse(response.getAccessToken(), refreshToken));
+        // Refresh Token 별도 발급
+        String refreshToken = jwtTokenProvider.createRefreshToken(loginRequest.getEmail());
+
+        // 응답 생성
+        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(
+                true,
+                "Login successful",
+                new LoginResponse(response.getAccessToken(), refreshToken)
+        );
+
         return ResponseEntity.ok(apiResponse);
     }
 
     /**
-     * Refresh Token API - Refresh Token을 이용해 새로운 Access Token 발급
+     * Refresh Token으로 Access Token 재발급
      */
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(@RequestBody Map<String, String> tokenRequest) {
         String refreshToken = tokenRequest.get("refreshToken");
+
+        // 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new BadCredentialsException("Invalid refresh token");
         }
+
+        // 이메일 추출 → 실제론 DB 조회 후 권한 확인 추천
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
-        // DB 조회 등으로 사용자 역할을 확인할 수 있으나, 여기서는 간단하게 "USER"로 고정 처리
-        String newAccessToken = jwtTokenProvider.createToken(email, "USER");
-        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(true, "Token refreshed successfully",
-                new LoginResponse(newAccessToken, refreshToken));
+
+        // 새 Access Token 발급
+        String newAccessToken = jwtTokenProvider.createToken(email);
+
+        // 응답 반환
+        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(
+                true,
+                "Token refreshed successfully",
+                new LoginResponse(newAccessToken, refreshToken)
+        );
+
         return ResponseEntity.ok(apiResponse);
     }
 }

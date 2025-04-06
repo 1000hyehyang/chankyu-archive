@@ -1,6 +1,5 @@
 package com.imchankyu.security;
 
-import com.imchankyu.user.entity.User;
 import com.imchankyu.user.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -36,15 +35,14 @@ public class JwtTokenProvider {
     }
 
     /**
-     * 이메일과 역할 정보를 포함하는 Access Token 생성 메서드
+     * Access Token 생성 (이메일만 포함)
      */
-    public String createToken(String email, String role) {
+    public String createToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_MS);
 
         return Jwts.builder()
                 .setSubject(email)
-                .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -52,7 +50,7 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Refresh Token 생성 메서드 (역할 정보 없이 이메일만 담음)
+     * Refresh Token 생성 (역할 없음)
      */
     public String createRefreshToken(String email) {
         Date now = new Date();

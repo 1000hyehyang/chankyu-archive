@@ -1,21 +1,24 @@
 package com.imchankyu.user.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 /**
- * 로그인 요청 시 사용되는 DTO
+ * 로그인 요청 DTO - 이메일과 비밀번호를 받음
  */
 @Getter
-@Setter
+@NoArgsConstructor
 public class LoginRequest {
-    private String email;      // 사용자의 이메일
-    private String password;   // 사용자의 비밀번호 (암호화 전)
 
-    // 기본 생성자
-    public LoginRequest() {}
+    @NotBlank(message = "이메일은 필수입니다.")
+    @Email(message = "올바른 이메일 형식이 아닙니다.")
+    private String email;
 
-    // 두 인자를 받는 생성자 추가
+    @NotBlank(message = "비밀번호는 필수입니다.")
+    private String password;
+
     public LoginRequest(String email, String password) {
         this.email = email;
         this.password = password;

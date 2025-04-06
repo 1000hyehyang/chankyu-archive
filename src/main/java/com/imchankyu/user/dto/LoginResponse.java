@@ -1,23 +1,22 @@
 package com.imchankyu.user.dto;
 
 import lombok.Getter;
-import lombok.Setter;
 
 /**
- * 로그인 성공 시 클라이언트에 반환할 DTO
+ * 로그인 성공 시 반환되는 응답 DTO
  */
 @Getter
-@Setter
 public class LoginResponse {
-    private String accessToken;  // JWT Access Token
-    private String refreshToken; // JWT Refresh Token
+    private final String accessToken;
+    private final String refreshToken;
 
-    // Access Token만 사용하는 경우
+    // Access Token만 쓰는 경우
     public LoginResponse(String accessToken) {
         this.accessToken = accessToken;
+        this.refreshToken = null;
     }
 
-    // Access Token과 Refresh Token 모두 전달하는 경우
+    // 둘 다 쓰는 경우
     public LoginResponse(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
